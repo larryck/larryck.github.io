@@ -1,0 +1,494 @@
+---
+title: 聊聊chroot
+description: 其实在Linux的源码(2.6.32)中，最后一部分是使用到了Chroot的。我们知道，Linux内核在启动过程中，完成了内存、cpu等等最基础资源的的初始化之后将要挂载Initrd，然后执行Initrd中的一系列命令。当Initrd中的任务执行完之后，Linux将要挂载硬盘文件系统，作为启动后的工作文件系统。这个过程中就使用到了chroot。
+categories:
+ - Linux
+tags:
+ - FileSystem
+---
+
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Coding Thoughts</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="Chongk-t">
+    
+
+    
+    <meta name="description" content="聊聊chroot
+这里有一篇很棒的文章关于chroot如何使用。
+其实在Linux的源码(2.6.32)中，最后一部分是使用到了Chroot的。我们知道，Linux内核在启动过程中，完成了内存、cpu等等最基础资源的的初始化之后将要挂载Initrd，然后执行Initrd中的一系列命令。当Initrd中的任务执行完之后，Linux将要挂载硬盘文件系统，作为启动后的工作文件系统。这个过程中就使用到了c">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Coding Thoughts">
+<meta property="og:url" content="http://chongk-t.github.io/2016/01/26/chroot/index.html">
+<meta property="og:site_name" content="Coding Thoughts">
+<meta property="og:description" content="聊聊chroot
+这里有一篇很棒的文章关于chroot如何使用。
+其实在Linux的源码(2.6.32)中，最后一部分是使用到了Chroot的。我们知道，Linux内核在启动过程中，完成了内存、cpu等等最基础资源的的初始化之后将要挂载Initrd，然后执行Initrd中的一系列命令。当Initrd中的任务执行完之后，Linux将要挂载硬盘文件系统，作为启动后的工作文件系统。这个过程中就使用到了c">
+<meta property="og:updated_time" content="2016-01-26T08:56:44.315Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Coding Thoughts">
+<meta name="twitter:description" content="聊聊chroot
+这里有一篇很棒的文章关于chroot如何使用。
+其实在Linux的源码(2.6.32)中，最后一部分是使用到了Chroot的。我们知道，Linux内核在启动过程中，完成了内存、cpu等等最基础资源的的初始化之后将要挂载Initrd，然后执行Initrd中的一系列命令。当Initrd中的任务执行完之后，Linux将要挂载硬盘文件系统，作为启动后的工作文件系统。这个过程中就使用到了c">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Coding Thoughts" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/jacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/jacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      
+<div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="Coding Thoughts" title="Coding Thoughts"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Coding Thoughts">Coding Thoughts</a></h1>
+				<h2 class="blog-motto">Thinking and coding down.</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">Home</a></li>
+					
+						<li><a href="/archives">Archives</a></li>
+					
+						<li><a href="/about">About</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:chongk-t.github.io">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2016/01/26/chroot/" title="" itemprop="url"></a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="/about" title="Chongk-t" target="_blank" itemprop="author">Chongk-t</a>
+		
+  <p class="article-time">
+    <time datetime="2016-01-26T08:56:44.316Z" itemprop="datePublished"> 发表于 2016-01-26</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#聊聊chroot"><span class="toc-number">1.</span> <span class="toc-text">聊聊chroot</span></a></li></ol>
+		
+		</div>
+		
+		<h1 id="聊聊chroot">聊聊chroot</h1><hr>
+<p>这里有一篇很棒的<a href="http://www.ibm.com/developerworks/cn/linux/l-cn-chroot/index.html" target="_blank" rel="external">文章</a>关于chroot如何使用。</p>
+<p>其实在Linux的源码(2.6.32)中，最后一部分是使用到了Chroot的。我们知道，Linux内核在启动过程中，完成了内存、cpu等等最基础资源的的初始化之后将要挂载Initrd，然后执行Initrd中的一系列命令。当Initrd中的任务执行完之后，Linux将要挂载硬盘文件系统，作为启动后的工作文件系统。这个过程中就使用到了chroot。</p>
+<p>当然chroot对应的root并不是文件系统中的/root目录。我的理解是change root inode。大家知道，对Linux来说，无论是磁盘中的文件、目录都对应着一个inode。那么，文件系统中的数据是如何访问的呢？在Linux中，系统使用一个root inode保存当前文件系统的入口，当然默认情况对应的是文件系统的根目录。当用户需要访问文件系统中的某一个文件时，例如对应的路径是/a/b/c/xx时，Linux对文件路径的解析是从root inode找到a目录对应的inode，再从a目录下对应的inodes中找到目录b对应的inode，层层寻找最终找到xx文件对应的inode。从上面这个过程我们可以看到，root inode作为整个文件访问的入口的作用。</p>
+<p>当我们使用chroot将root inode替换之后，文件系统的入口变成了整个磁盘文件系统的某一个目录时，系统中的文件访问路径自然也有了相应的局限，局限到一个某个目录中，这也就达到了chroot的种种错误隔离之类的效果。</p>
+<p>这里说说我之前的一个疑问。我们之前做了一个多OS系统，每个OS使用宿主OS的一个目录，为了兼容整个应用执行的环境，我们需要将目标OS的文件访问路径进行chroot。其实这个场景在Linux Container中也非常常见。那么问题来了，对于某个系统来说，我们能用符号链接将宿主系统的/bin、/lib、/sbin之类的目录链接到目标系统的工作目录下以共享使用么？<br>答案是不行的。因为符号链接对于Linux来说是一个特殊的文件，里边保存了目标文件的的路径。那么，既然你整个文件系统的路径都已经变了，符号链接中的目录自然也找不到了。<br>这个问题其实使用硬链接就可以解决。硬链接相当于将目标目录的inode挂在本目录下。那么，既然inode都是一样的，系统根据该inode可以找到bin中的文件，访问路径也就没问题了。</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://chongk-t.github.io/2016/01/26/chroot/" data-title="Coding Thoughts" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2016/01/27/TeraSort-output-replication/" title="">
+  <strong>上一篇：</strong><br/>
+  <span>
+  (no title)</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2016/01/22/NodeManagerResourceReport/"  title="NodeManager资源注册">
+ <strong>下一篇：</strong><br/> 
+ <span>NodeManager资源注册
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+
+<section id="comments" class="comment">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#聊聊chroot"><span class="toc-number">1.</span> <span class="toc-text">聊聊chroot</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+  <div class="archiveslist">
+    <p class="asidetitle"><a href="/archives">归档</a></p>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/01/">一月 2016</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/12/">十二月 2015</a><span class="archive-list-count">5</span></li></ul>
+  </div>
+
+
+  
+<div class="github-card">
+<p class="asidetitle">Github 名片</p>
+<div class="github-card" data-github="chongk-t" data-width="220" data-height="119" data-theme="medium">
+<script type="text/javascript" src="//cdn.jsdelivr.net/github-cards/latest/widget.js" ></script>
+</div>
+  </div>
+
+
+
+  
+
+  
+
+  <div class="linkslist">
+  <p class="asidetitle">友情链接</p>
+    <ul>
+        
+    </ul>
+</div>
+
+  
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+  <div class="weiboshow">
+  <p class="asidetitle">新浪微博</p>
+    <iframe width="100%" height="119" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=119&fansRow=2&ptype=1&speed=0&skin=9&isTitle=1&noborder=1&isWeibo=0&isFans=0&uid=null&verifier=&dpc=1"></iframe>
+</div>
+
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<section class="info">
+		<p> Coding Thoughts. <br/>
+			Thinking and coding down.</p>
+	</section>
+	 
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/2033724051" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/chongk-t" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		<a href="mailto:chongk-t@hotmail.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="/about" target="_blank" title="Chongk-t">Chongk-t</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+<script src="/js/jquery.qrcode-0.12.0.min.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<div class="hoverqrcode clearfix"></div>',
+  '<a class="overlay" id="qrcode"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+
+  $('.hoverqrcode').hide();
+
+  var myWidth = 0;
+  function updatehoverqrcode(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+    var qrsize = myWidth > 1024 ? 200:100;
+    var options = {render: 'image', size: qrsize, fill: '#2ca6cb', text: url, radius: 0.5, quiet: 1};
+    var p = $('.article-share-qrcode').position();
+    $('.hoverqrcode').empty().css('width', qrsize).css('height', qrsize)
+                          .css('left', p.left-qrsize/2+20).css('top', p.top-qrsize-10)
+                          .qrcode(options);
+  };
+  $(window).resize(function(){
+    $('.hoverqrcode').hide();
+  });
+  $('.article-share-qrcode').click(function(){
+    updatehoverqrcode();
+    $('.hoverqrcode').toggle();
+  });
+  $('.article-share-qrcode').hover(function(){}, function(){
+      $('.hoverqrcode').hide();
+  });
+});   
+</script>
+
+
+
+
+<script type="text/javascript">
+
+var disqus_shortname = 'chongkt';
+
+(function(){
+  var dsq = document.createElement('script');
+  dsq.type = 'text/javascript';
+  dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+}());
+(function(){
+  var dsq = document.createElement('script');
+  dsq.type = 'text/javascript';
+  dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+}());
+</script>
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?e6d1f421bbc9962127a50488f9ed37d1";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

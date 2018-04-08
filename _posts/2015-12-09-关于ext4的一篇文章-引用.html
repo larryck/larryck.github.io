@@ -1,0 +1,493 @@
+---
+title: 关于ext4的一篇文章-引用
+description: Ext4文件系统在应用程序调用write的时候并不为缓存页面分配对应的物理磁盘块，当文件的缓存页面真正要被刷新至磁盘中时，ext4会为所有未分配物理磁盘块的页面缓存分配尽量连续的磁盘块。
+categories:
+ - Linux
+tags:
+ - FileSystem
+ - io
+---
+
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>转-ext4的延迟分配 | Coding Thoughts</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="Chongk-t">
+    
+
+    
+    <meta name="description" content="本文转自kai_ding博客，好文跟大家分享Ext4文件系统在应用程序调用write的时候并不为缓存页面分配对应的物理磁盘块，当文件的缓存页面真正要被刷新至磁盘中时，ext4会为所有未分配物理磁盘块的页面缓存分配尽量连续的磁盘块。Linux文件系统Vfs层总是将应用程序的写入请求分割成页面（默认大小4KB）为单位，对于每个页面，VFS会检查其是否已经为其创建了buffer_head结构，如果没有创">
+<meta property="og:type" content="article">
+<meta property="og:title" content="转-ext4的延迟分配">
+<meta property="og:url" content="http://chongk-t.github.io/2015/12/09/R-ext4/index.html">
+<meta property="og:site_name" content="Coding Thoughts">
+<meta property="og:description" content="本文转自kai_ding博客，好文跟大家分享Ext4文件系统在应用程序调用write的时候并不为缓存页面分配对应的物理磁盘块，当文件的缓存页面真正要被刷新至磁盘中时，ext4会为所有未分配物理磁盘块的页面缓存分配尽量连续的磁盘块。Linux文件系统Vfs层总是将应用程序的写入请求分割成页面（默认大小4KB）为单位，对于每个页面，VFS会检查其是否已经为其创建了buffer_head结构，如果没有创">
+<meta property="og:image" content="http://ww2.sinaimg.cn/mw690/79382a93jw1eyspjo01kkj20e50833zf.jpg">
+<meta property="og:image" content="http://ww4.sinaimg.cn/mw690/79382a93jw1eyspjo5xoej20gj09m419.jpg">
+<meta property="og:image" content="http://ww2.sinaimg.cn/mw690/79382a93jw1eyspjnqx19j20f10a2wgw.jpg">
+<meta property="og:updated_time" content="2015-12-08T16:29:23.129Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="转-ext4的延迟分配">
+<meta name="twitter:description" content="本文转自kai_ding博客，好文跟大家分享Ext4文件系统在应用程序调用write的时候并不为缓存页面分配对应的物理磁盘块，当文件的缓存页面真正要被刷新至磁盘中时，ext4会为所有未分配物理磁盘块的页面缓存分配尽量连续的磁盘块。Linux文件系统Vfs层总是将应用程序的写入请求分割成页面（默认大小4KB）为单位，对于每个页面，VFS会检查其是否已经为其创建了buffer_head结构，如果没有创">
+
+    
+    <link rel="alternative" href="/atom.xml" title="Coding Thoughts" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/jacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/jacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      
+<div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="Coding Thoughts" title="Coding Thoughts"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Coding Thoughts">Coding Thoughts</a></h1>
+				<h2 class="blog-motto">Thinking and coding down.</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">Home</a></li>
+					
+						<li><a href="/archives">Archives</a></li>
+					
+						<li><a href="/about">About</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:chongk-t.github.io">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/12/09/R-ext4/" title="转-ext4的延迟分配" itemprop="url">转-ext4的延迟分配</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="/about" title="Chongk-t" target="_blank" itemprop="author">Chongk-t</a>
+		
+  <p class="article-time">
+    <time datetime="2015-12-08T16:29:23.130Z" itemprop="datePublished"> 发表于 2015-12-09</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			
+		
+		</div>
+		
+		<p><strong>本文转自<a href="http://m.blog.csdn.net/blog/kai_ding/9914629" target="_blank" rel="external">kai_ding博客</a>，好文跟大家分享</strong><br>Ext4文件系统在应用程序调用write的时候并不为缓存页面分配对应的物理磁盘块，当文件的缓存页面真正要被刷新至磁盘中时，ext4会为所有未分配物理磁盘块的页面缓存分配尽量连续的磁盘块。<br>Linux文件系统Vfs层总是将应用程序的写入请求分割成页面（默认大小4KB）为单位，对于每个页面，VFS会检查其是否已经为其创建了buffer_head结构，如果没有创建，则为其创建buffer_head，否则检查每个buffer_head的状态，如该buffer_head是否已经与物理磁盘块建立映射等，这些功能是由write_begin()函数实现的，该函数是由VFS提供的一个接口，具体文件系统负责实现该接口，如ext3文件系统的ext3_write_begin()。而ext4如果采用了delay allocation特性的话，其实现的函数为ext4_da_write_begin()。<br>ext4_da_write_begin()会检查页面所有的buffer_head的状态，如buffer_head是否已经建立映射等，对于没有建立映射的buffer_head，需要将其与物理磁盘块建立映射关系，调用的函数是ext4_da_get_block_prep()，该函数又调用了ext4_map_blocks()来建立逻辑块和物理磁盘块的映射关系，如果启用extent特性的话，那么该函数又调用了ext4_ext_map_blocks(handle, inode, map, 0)来建立这种映射关系，之所以列举该函数的参数是要特别注意其最后一个参数0，这是一个标志位，调用者ext4_map_blocks()将该标志位设置为0，告诉被调用者，如果没有建立映射关系，那么此刻无需真正地分配物理磁盘块。这在ext4_ext_map_blocks函数中可以看到会有对该标志位的判断。就不再详细列举代码了。因为在ext4_map_blocks()中并没有建立映射关系，因此其向ext4_da_get_block_prep()返回0，表示没有映射，在ext4_da_get_block_prep()函数中判断如果返回值为0，那么为当前block设置标志位BH_New，BH_Mapped,BH_Delay（表示该块在写入的时候再进行延迟分配）。<br><img src="http://ww2.sinaimg.cn/mw690/79382a93jw1eyspjo01kkj20e50833zf.jpg" alt="1"><br><img src="http://ww4.sinaimg.cn/mw690/79382a93jw1eyspjo5xoej20gj09m419.jpg" alt="2"></p>
+<p>以上我们确认了在ext4中延迟分配的前半部分，即应用程序将数据写入文件时只是简单地将数据以页面为单位写入页面缓存中，而并不真正地为其分配物理磁盘块。接下来我们要弄明白的是，ext4何时会为缓存中未分配物理磁盘块的缓存分配磁盘空间。</p>
+<p>当刷新线程开始将脏的缓存页面写回至物理磁盘时，根据我们之前的描述，回写线程会以文件为单位进行回写，即对脏inode链表上的所有脏inode依次回写。对于每个脏inode（也即每个脏的文件），回写线程会将inode上的所有脏页面进行回写，这时候就需要判断每个脏页面的状态了。</p>
+<p>回写线程中实现的时候将一个文件的脏页面分多次进行回写，每个回写一部分脏页面。关于回写机制可参考Linux的“脏页面回写机制”。回写脏页面最终调用到函数writepages，与writebegin一样，它也是VFS提供的一个虚拟接口，由具体文件系统负责相应的实现。对于采用延迟分配的ext4文件系统来说，该函数的具体实现是ext4_da_writepages()。该函数中实现的时候有三个要点：</p>
+<p> 要将逻辑上连续的脏且尚未建立磁盘块映射到物理页面形成一个extent，以便可采用ext4的mblock分配策略提升文件连续性，这也是我们后面要介绍的内容；<br>对1中连续页面形成的extent，为其进行磁盘块分配，分配采用了ext4的mblock allocation策略。<br>提交2中的extent至bio层完成脏页面的写入，此时已经为尚未映射的缓存页面分配了物理磁盘块。</p>
+<p><img src="http://ww2.sinaimg.cn/mw690/79382a93jw1eyspjnqx19j20f10a2wgw.jpg" alt="3"></p>
+<p>上图描述了延迟分配的核心思想：等到刷新脏缓存页面时再建立脏页面与物理磁盘块之间的联系，而且，分配之前将逻辑上连续的文件块映射至物理上连续的磁盘块。在ext4_da_writepages()函数中调用了三个非常重要的函数来完成上述功能：write_cache_pages_da()负责将逻辑上连续的文件块合并成一个extent；mpage_da_map_blocks()负责为合并后的extent建立映射关系；mpage_da_submit_io()负责提交上面映射的extent。</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://chongk-t.github.io/2015/12/09/R-ext4/" data-title="转-ext4的延迟分配 | Coding Thoughts" data-tsina="null" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/12/09/flush-high-io/" title="flush线程为何一直在IO">
+  <strong>上一篇：</strong><br/>
+  <span>
+  flush线程为何一直在IO</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/12/07/HiBench-SSH-Banner-Issue/"  title="HiBench的一个Bug-SSH Banner惹的祸">
+ <strong>下一篇：</strong><br/> 
+ <span>HiBench的一个Bug-SSH Banner惹的祸
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+
+<section id="comments" class="comment">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ 
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+  <div class="archiveslist">
+    <p class="asidetitle"><a href="/archives">归档</a></p>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/01/">一月 2016</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/12/">十二月 2015</a><span class="archive-list-count">5</span></li></ul>
+  </div>
+
+
+  
+<div class="github-card">
+<p class="asidetitle">Github 名片</p>
+<div class="github-card" data-github="chongk-t" data-width="220" data-height="119" data-theme="medium">
+<script type="text/javascript" src="//cdn.jsdelivr.net/github-cards/latest/widget.js" ></script>
+</div>
+  </div>
+
+
+
+  
+
+  
+
+  <div class="linkslist">
+  <p class="asidetitle">友情链接</p>
+    <ul>
+        
+    </ul>
+</div>
+
+  
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+  <div class="weiboshow">
+  <p class="asidetitle">新浪微博</p>
+    <iframe width="100%" height="119" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=119&fansRow=2&ptype=1&speed=0&skin=9&isTitle=1&noborder=1&isWeibo=0&isFans=0&uid=null&verifier=&dpc=1"></iframe>
+</div>
+
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<section class="info">
+		<p> Coding Thoughts. <br/>
+			Thinking and coding down.</p>
+	</section>
+	 
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/2033724051" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/chongk-t" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		<a href="mailto:chongk-t@hotmail.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2016 
+		
+		<a href="/about" target="_blank" title="Chongk-t">Chongk-t</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+<script src="/js/jquery.qrcode-0.12.0.min.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<div class="hoverqrcode clearfix"></div>',
+  '<a class="overlay" id="qrcode"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+
+  $('.hoverqrcode').hide();
+
+  var myWidth = 0;
+  function updatehoverqrcode(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+    var qrsize = myWidth > 1024 ? 200:100;
+    var options = {render: 'image', size: qrsize, fill: '#2ca6cb', text: url, radius: 0.5, quiet: 1};
+    var p = $('.article-share-qrcode').position();
+    $('.hoverqrcode').empty().css('width', qrsize).css('height', qrsize)
+                          .css('left', p.left-qrsize/2+20).css('top', p.top-qrsize-10)
+                          .qrcode(options);
+  };
+  $(window).resize(function(){
+    $('.hoverqrcode').hide();
+  });
+  $('.article-share-qrcode').click(function(){
+    updatehoverqrcode();
+    $('.hoverqrcode').toggle();
+  });
+  $('.article-share-qrcode').hover(function(){}, function(){
+      $('.hoverqrcode').hide();
+  });
+});   
+</script>
+
+
+
+
+<script type="text/javascript">
+
+var disqus_shortname = 'chongkt';
+
+(function(){
+  var dsq = document.createElement('script');
+  dsq.type = 'text/javascript';
+  dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+}());
+(function(){
+  var dsq = document.createElement('script');
+  dsq.type = 'text/javascript';
+  dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+}());
+</script>
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?e6d1f421bbc9962127a50488f9ed37d1";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>
