@@ -70,6 +70,7 @@ tags:
 		// regardless of whether the variable exists or not.
 		// +optional
 		Args []string
+
 Comand对应的的是image中的entrypoint，args对应的是image中的cmd。 docker manager中的操作也验证了这一点：
 	
 	func setEntrypointAndCommand(container *v1.Container, opts *kubecontainer.RunContainerOptions, dockerOpts dockertypes.ContainerCreateConfig) {
@@ -84,4 +85,4 @@ OK，最终的原因是我们对k8s pod中的command项的认识有偏差。
 # docker commit
 默认情况下，当正在提交生成镜像时，容器将暂停直到提交完成。这减小了在提交的过程中数据损坏的可能性。如果不想暂停容器，可以设置–pause选项为false。
 
-–change选项用来应用Dockerfile指令到将要创建的镜像，包括Dockerfile指令CMD|ENTRYPOINT|ENV|EXPOSE|LABEL|ONBUILD|USER|VOLUME|WORKDIR等。
+–change选项用来应用Dockerfile指令到将要创建的镜像，包括Dockerfile指令CMD、ENTRYPOINT、ENV、EXPOSE、WORKDIR等。
