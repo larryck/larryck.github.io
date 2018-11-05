@@ -24,7 +24,7 @@ When we try to conduct stateful apps with CustomResourceDefinition(crd for short
       ... arbitrary flags passed to all generator binaries.
     
 
-The first step to generate a clientset for a crd resource is to **define crd structs**, which is the apis-package parameter of generate-groups. Some tags in the api-package give the generate-groups tool indications on how to manipulate each resource, for example:
+The first step to generate a clientset for a crd resource is to **define crd structs**, which is the **apis-package** parameter of generate-groups. Some tags in the api-package give the generate-groups tool indications on how to manipulate each resource, for example:
     
     // +genclient
     // +genclient:noStatus
