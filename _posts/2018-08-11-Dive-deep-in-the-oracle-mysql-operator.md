@@ -9,7 +9,7 @@ tags:
 
 
 
-Statefulset app support is one of the key features of the containerized hyper-converged system. Recently I had spent some time on highly available MySQL solutions on containers, and read the article Running MySQL on Kubernetes using an operator[https://banzaicloud.com/blog/mysql-on-kubernetes/] wrote by Gabor Kozma. The article compares three open-sourced mysql operators and opts for the Oracle MySQL operator. It also mentions some features that oracle operator supports, so I decided to take a closer look at it. 
+Statefulset app support is one of the key features of the containerized hyper-converged system. Recently I had spent some time on highly available MySQL solutions on containers, and read the article [Running MySQL on Kubernetes using an operator](https://banzaicloud.com/blog/mysql-on-kubernetes/) wrote by Gabor Kozma. The article compares three open-sourced mysql operators and opts for the Oracle MySQL operator. It also mentions some features that oracle operator supports, so I decided to take a closer look at it. 
 
 # CustomResourceDefinition
 The oracle operator uses three CustomResourceDefinitions (MySQLCluster, MySQLBackup, MySQLRestore) to manage mysql clusters. The operator has three controllers related to the CustomResourceDefinitions, namely the clusterController, the backupController, and the restoreController. 
