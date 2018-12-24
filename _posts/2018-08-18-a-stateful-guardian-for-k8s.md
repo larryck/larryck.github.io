@@ -1,5 +1,5 @@
 ---
-title: a stateful guardian for k8s
+title: a stateful app guardian for k8s
 description: 
 categories:
 - k8s
