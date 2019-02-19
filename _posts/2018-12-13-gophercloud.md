@@ -34,4 +34,5 @@ gophercloud是一个成熟的openstack go client，包括kubernetes官方cloudpr
     provider, err := openstack.AuthenticatedClient(opts)
 
 ---
-添加好友我们可以聊更多相关话题[二维码](https://upload-images.jianshu.io/upload_images/7924740-a905d0f137971f94.jpeg
+
+添加好友我们可以聊更多相关话题[二维码](https://upload-images.jianshu.io/upload_images/7924740-a905d0f137971f94.jpeg)
