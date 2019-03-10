@@ -1,5 +1,5 @@
 ---
-title: a hidden bug caused by k8s
+title:  hidden bug caused by k8s
 description: 
 categories:
 - k8s
