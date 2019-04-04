@@ -1,5 +1,5 @@
 ---
-title:  hidden bug caused by k8s
+title: bug caused by for iteration in go
 description: 
 categories:
 - k8s
