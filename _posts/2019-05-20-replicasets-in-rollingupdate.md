@@ -8,6 +8,8 @@ tags:
 ---
 Recently I found that after rolling update deployments for lots of times, thousands of old replicasets remained in my k8s cluster. Why are old replicasets not deleted in k8s?
 
+Too many old replicasets will cause confusion and other problems in dashboard, so we strongly recommend you to set RevisionHistoryLimit value for deployment in version extensions/v1beta1.
+
 # Revision History Limit
 A Deployment’s revision history is stored in the ReplicaSets it controls.
 
