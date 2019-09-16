@@ -31,6 +31,11 @@ conflictRE = regexp.MustCompile(`Conflict. (?:.)+ is already in use by container
 
 **加上双引号后，上述conflictRE正则匹配将失败，导致Kubernetes的删除已存容器机制失效，最终造成了Pod一直处于Error状态。**
 
+问题的解决也非常简单，即将上面的正则表达式换成如下：
+```
+conflictRE = regexp.MustCompile(`Conflict. (?:.)+ is already in use by container \"?([0-9a-z]+)\"?`)
+```
+
 # 问题影响范围
 我核实Kubernetes的代码实现，这个Bug在Kubernetes V1.16.0-alpha.2版本开始修复，也就是说Kubernetes V1.16.0-alpha.1版本之前的所有版本都这个问题都存在。然而，我也注意到，社区对于V1.13以后的release版本都已经做了修复，但是V1.12之前的版本这个问题依然存在。
 
