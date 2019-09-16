@@ -8,14 +8,14 @@ tags:
 ---
 
 # 错误现象
-在机房断电恢复LKS（我们自己开发的智能Kubernetes服务）的过程中，我发现在Kubernetes集群重启之后有一些Pod一直处于Error状态。通过查询错误原因，我发现了如下错误信息：
+在机房断电恢复LKS（我们自己开发的[智能Kubernetes服务](https://larryck.github.io/k8s/2018/12/12/lks-k8s-service/)）的过程中，我发现在Kubernetes集群重启之后有一些Pod一直处于Error状态。通过查询错误原因，我发现了如下错误信息：
 
 ```
 failed to create a sandbox for pod "duke-0": Error response from daemon: Conflict. The container name "/k8s_POD_duke-0_5114e2-duke_2f8d05f5-ae84-11e9-9652-fa163eca445b_3" is already in use by container "466e7ecb2762cb6a12e8bd0b8a80aca90991c762d8364e236992380ecc6d4656". You have to remove (or rename) that container to be able to reuse that name.
 ```
 
 # 问题分析
-社区中已经发现了在今年七月份已经发现了[这个问题](https://github.com/kubernetes/kubernetes/pull/79623). 在本文中，我将总结并在分析LKS使用的版本V1.13.1中的问题。
+社区中已经发现了在今年七月份已经发现了[这个问题](https://github.com/kubernetes/kubernetes/pull/79623)。 在本文中，我将总结并在分析LKS使用的版本V1.13.1中的问题。
 
 问题的起因是在某些情况下docker将进入一种不一致的内部状态。这种不一致状态的一个现象是某些错误的容器在docker中已经存在，而docker进程并未处理。当节点重启等情况下kubelet尝试创建docker容器时docker将返回命名冲突，即创建的容器使用的名称在已经存在。这时将返回我们开篇提到的错误。
 
