@@ -1,5 +1,5 @@
 ---
-title: why tcp connections not closed after http requests ends 
+title: why tcp connections not closed after http requests end
 description: 
 categories:
 - istio
