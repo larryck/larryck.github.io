@@ -20,4 +20,4 @@ K8s需要指定apiserver的访问接口，以及配置证书接受对应的IP。
 kubelet向apiserver注册K8s的node节点，这其中包括node使用的InternalIP。为了让InternalIP使用指定网络的IP，我们需要给Kubelet加上--node-ip参数。
 
 # flannel
-flannel默认使用node的第一块网卡地址作为overlay数据包的出口。为了修改flannel的使用特定IP，我们可以修改flannel的yaml文件，增加--iface选项指定flannel使用的网卡或者IP，例如--iface=ens1f1，这个选项可以指定多次，flannel将以此尝试，直到找到正确的选项。
+flannel默认使用node的第一块网卡地址作为overlay数据包的出口。为了修改flannel的使用特定IP，我们可以修改flannel的yaml文件，增加--iface选项指定flannel使用的网卡或者IP，例如--iface=ens1f1，这个选项可以指定多次，flannel将依次尝试，直到找到正确的选项。
