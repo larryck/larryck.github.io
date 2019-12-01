@@ -21,3 +21,6 @@ kubelet向apiserver注册K8s的node节点，这其中包括node使用的Internal
 
 # flannel
 flannel默认使用node的第一块网卡地址作为overlay数据包的出口。为了修改flannel的使用特定IP，我们可以修改flannel的yaml文件，增加--iface选项指定flannel使用的网卡或者IP，例如--iface=ens1f1，这个选项可以指定多次，flannel将依次尝试，直到找到正确的选项。
+
+# dns
+当coredns解析失败之后，dns将查询物理机配置的dns服务器，dns查询流量将继续走到其他网卡。需要修改物理机的dns配置。
